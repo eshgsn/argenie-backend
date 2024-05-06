@@ -1,12 +1,13 @@
 import string
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Response
 from motor.motor_asyncio import AsyncIOMotorClient
 from pymongo.errors import DuplicateKeyError
 from bson import ObjectId
 from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi import Query
+from motor.motor_asyncio import AsyncIOMotorClient
 
 
 app = FastAPI()
@@ -59,22 +60,23 @@ async def read_demo(page: int = Query(1, gt=0), per_page: int = Query(10, gt=0))
 
 
 
-@app.put("/demo/{demo_id}")
-async def update_demo(demo_id: str, demo: DemoModel):
+@app.put("/demo/{_id}")
+async def update_demo(_id: str, demo: DemoModel):
     demo_dict = demo.dict()
-    await collection.update_one({"_id": demo_id}, {"$set": demo_dict})
-    updated_demo = await collection.find_one({"_id": demo_id})
+    print("value of demo_id is ", _id)
+    await collection.update_one({"_id": ObjectId(_id)}, {"$set": demo_dict})
+    print("value of demo_id is 2 ", _id)
+    updated_demo = await collection.find_one({"_id": ObjectId(_id)})
     if updated_demo:
         return updated_demo
     raise HTTPException(status_code=404, detail="Demo not found")
 
 
 
-@app.delete("/demo/{demo_id}")
-async def delete_demo(demo_id: str):
-    deleted_demo = await collection.find_one_and_delete({"_id": demo_id})
-    if deleted_demo:
-        return deleted_demo
-    raise HTTPException(status_code=404, detail="Demo not found")
-
-
+@app.delete("/demo/{_id}")
+async def delete_demo(_id: str):
+    print(_id)
+    obj_id = ObjectId(_id)
+    res = await collection.delete_one({"_id": obj_id})
+    return res
+    
